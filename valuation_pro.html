@@ -1,0 +1,1174 @@
+
+cat > /mnt/user-data/outputs/valuation_pro.html << 'HTMLEOF'
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="page-title">Valuation — Análise Fundamental</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0d0d0d;--ink2:#2a2a2a;--ink3:#555;--ink4:#888;
+  --paper:#f9f7f3;--paper2:#f2efe9;--paper3:#e8e4dc;--rule:#d4cfc6;
+  --acc:#1a3a5c;--acc2:#c8401a;--acc3:#2d6a4f;--gold:#b8860b;
+  --bear:#c8401a;--base-c:#1a3a5c;--bull:#2d6a4f;
+  --serif:'DM Serif Display',Georgia,serif;
+  --sans:'Instrument Sans',system-ui,sans-serif;
+  --mono:'DM Mono','Courier New',monospace;
+  --panel-w:360px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.65;min-height:100vh}
+
+/* SIDE PANEL */
+#panel{position:fixed;top:0;right:0;height:100vh;width:var(--panel-w);background:#0d1117;color:#e6edf3;z-index:200;overflow-y:auto;padding:0;border-left:1px solid #30363d;transition:transform .3s}
+#panel.hidden{transform:translateX(var(--panel-w))}
+#panel-header{padding:16px 20px;border-bottom:1px solid #21262d;position:sticky;top:0;background:#0d1117;z-index:10;display:flex;align-items:center;justify-content:space-between}
+#panel-header h2{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#58a6ff}
+#panel-close{background:none;border:none;color:#8b949e;cursor:pointer;font-size:18px;line-height:1}
+#panel-body{padding:20px}
+.p-tabs{display:flex;gap:2px;margin-bottom:20px;background:#161b22;border-radius:4px;padding:3px}
+.p-tab{flex:1;padding:6px 4px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;border:none;background:transparent;color:#8b949e;cursor:pointer;border-radius:3px;transition:all .15s}
+.p-tab.active{background:#1a3a5c;color:#fff}
+.p-section{display:none}.p-section.active{display:block}
+.p-group{margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #21262d}
+.p-group:last-child{border-bottom:none}
+.p-group-title{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#58a6ff;margin-bottom:12px}
+.p-row{margin-bottom:10px}
+.p-row label{display:block;font-size:11px;color:#8b949e;margin-bottom:4px;font-family:var(--mono)}
+.p-row input,.p-row select,.p-row textarea{width:100%;background:#161b22;border:1px solid #30363d;border-radius:4px;color:#e6edf3;padding:6px 10px;font-family:var(--mono);font-size:12px;outline:none;transition:border-color .2s}
+.p-row input:focus,.p-row select:focus,.p-row textarea:focus{border-color:#58a6ff}
+.p-row textarea{resize:vertical;min-height:70px}
+.p-2col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.p-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.p-btn{width:100%;padding:9px;border:none;border-radius:4px;cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-top:6px;transition:background .2s}
+.p-btn-primary{background:#1a3a5c;color:#fff}.p-btn-primary:hover{background:#2d6a4f}
+.p-btn-accent{background:#c8401a;color:#fff}.p-btn-accent:hover{background:#a33015}
+.p-btn-ghost{background:#21262d;color:#e6edf3}.p-btn-ghost:hover{background:#30363d}
+.p-note{font-size:10px;color:#6e7681;margin-top:4px;font-family:var(--mono);line-height:1.5}
+.p-hint{font-size:10px;color:#e6a817;margin-top:4px;font-family:var(--mono);line-height:1.5;padding:6px 8px;background:#2a1f0a;border-radius:3px;border-left:2px solid #e6a817}
+.fetch-row{display:flex;gap:8px;align-items:flex-end}
+.fetch-row input{flex:1}
+.p-badge{display:inline-block;padding:2px 8px;border-radius:2px;font-family:var(--mono);font-size:10px}
+.p-badge-ok{background:#1a4d2e;color:#56d364}.p-badge-err{background:#4d1a1a;color:#f85149}
+#fetch-status{font-family:var(--mono);font-size:11px;margin-top:6px}
+
+/* TOGGLE BTN */
+#toggle-btn{position:fixed;top:50%;right:0;transform:translateY(-50%);z-index:201;background:var(--acc);color:#fff;border:none;cursor:pointer;padding:14px 7px;border-radius:6px 0 0 6px;font-family:var(--mono);font-size:10px;letter-spacing:2px;writing-mode:vertical-rl;transition:right .3s}
+#toggle-btn.open{right:var(--panel-w)}
+
+/* MAIN */
+#main{margin-right:var(--panel-w);transition:margin-right .3s;min-height:100vh}
+#main.full{margin-right:0}
+
+/* HEADER */
+.site-header{padding:16px 56px;border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;background:var(--paper);position:sticky;top:0;z-index:50}
+.header-left{display:flex;align-items:center;gap:16px}
+.logo{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--acc);letter-spacing:1px}
+.header-meta{font-size:12px;color:var(--ink4);font-family:var(--mono)}
+.header-pill{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:3px 10px;border:1px solid var(--rule);border-radius:2px;color:var(--ink3)}
+
+/* HERO */
+.hero{padding:72px 56px 56px;border-bottom:1px solid var(--rule);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-80px;right:-80px;width:500px;height:500px;background:radial-gradient(circle,rgba(26,58,92,.05) 0%,transparent 70%);pointer-events:none}
+.hero-label{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ink4);margin-bottom:14px}
+.hero-title{font-family:var(--serif);font-size:clamp(32px,4vw,52px);line-height:1.1;color:var(--ink);margin-bottom:18px;max-width:680px}
+.hero-title span{color:var(--acc)}
+.hero-meta{font-size:12px;color:var(--ink4);font-family:var(--mono);margin-bottom:28px}
+.hero-desc{font-size:14px;color:var(--ink2);max-width:620px;line-height:1.8}
+
+/* NAV */
+.section-nav{padding:0 56px;border-bottom:1px solid var(--rule);display:flex;gap:0;overflow-x:auto;background:var(--paper2)}
+.nav-item{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);padding:14px 20px;border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer;transition:all .15s;text-decoration:none}
+.nav-item:hover{color:var(--ink);border-color:var(--rule)}
+
+/* SECTIONS */
+.section{padding:64px 56px;border-bottom:1px solid var(--rule)}
+.s-num{font-family:var(--mono);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--acc2);margin-bottom:8px}
+.s-title{font-family:var(--serif);font-size:clamp(24px,3vw,34px);color:var(--ink);margin-bottom:10px;line-height:1.2}
+.s-sub{font-size:13px;color:var(--ink3);max-width:580px;line-height:1.75;margin-bottom:40px}
+
+/* EXPLAIN BOXES */
+.explain-box{background:linear-gradient(135deg,#f0f4f8 0%,var(--paper2) 100%);border:1px solid #c8d8e8;border-left:3px solid var(--acc);border-radius:0 4px 4px 0;padding:16px 20px;margin-bottom:28px;font-size:13px;color:var(--ink2);line-height:1.75}
+.explain-box strong{color:var(--acc);font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:6px}
+.explain-box.warn{border-left-color:var(--gold);background:linear-gradient(135deg,#fdf8ec 0%,var(--paper2) 100%);border-color:#e8d8a0}
+.explain-box.good{border-left-color:var(--acc3);background:linear-gradient(135deg,#eef6f0 0%,var(--paper2) 100%);border-color:#b8d8c0}
+
+/* DATA STATUS */
+.data-status{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;color:var(--ink4);margin-bottom:24px;padding:10px 14px;border:1px solid var(--rule);border-radius:4px;background:var(--paper2)}
+.dot-live{width:8px;height:8px;border-radius:50%;background:#56d364;animation:pulse 2s infinite}
+.dot-manual{width:8px;height:8px;border-radius:50%;background:var(--gold)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* CARDS */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.card{background:var(--paper);padding:22px 18px;transition:background .15s}
+.card:hover{background:var(--paper2)}
+.card-label{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink4);margin-bottom:8px}
+.card-value{font-family:var(--serif);font-size:24px;color:var(--ink);line-height:1.1;margin-bottom:6px}
+.card-sub{font-size:11px;color:var(--ink4);font-family:var(--mono)}
+.card-badge{display:inline-block;font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:2px;margin-top:6px}
+.bp{background:#d4edda;color:#1a4d2e}.bn{background:#fde8e4;color:#6b1a0e}.bnu{background:#e8e4dc;color:#555}
+
+/* TABLES */
+.tbl-wrap{overflow-x:auto;margin-top:24px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{border-bottom:2px solid var(--ink)}
+thead th{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);padding:10px 12px 10px 0;text-align:left;font-weight:500}
+tbody tr{border-bottom:1px solid var(--rule);transition:background .1s}
+tbody tr:hover{background:var(--paper2)}
+tbody td{padding:11px 12px 11px 0;color:var(--ink2);vertical-align:middle}
+tbody td:first-child{font-weight:500;color:var(--ink)}
+.mono{font-family:var(--mono)}
+.pos{color:var(--acc3)}.neg{color:var(--bear)}.neu{color:var(--gold)}
+.row-hi{background:rgba(26,58,92,.04)}
+
+/* SCENARIOS */
+.scenarios{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);margin-bottom:32px}
+.sc{background:var(--paper);padding:28px 22px}
+.sc-label{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
+.sc-price{font-family:var(--serif);font-size:38px;line-height:1;margin-bottom:8px}
+.sc-delta{font-family:var(--mono);font-size:12px;margin-bottom:10px}
+.sc-params{font-family:var(--mono);font-size:10px;color:var(--ink4);line-height:1.8}
+.sc.bear .sc-label,.sc.bear .sc-price{color:var(--bear)}
+.sc.base .sc-label,.sc.base .sc-price{color:var(--base-c)}.sc.base{border-left:3px solid var(--base-c)}
+.sc.bull .sc-label,.sc.bull .sc-price{color:var(--bull)}
+
+/* DCF YEAR TABLE */
+.dcf-yr-table{font-size:12px}
+.dcf-yr-table thead th{font-size:9px;padding:8px 10px 8px 0}
+.dcf-yr-table tbody td{padding:9px 10px 9px 0;font-family:var(--mono);font-size:11px}
+.dcf-yr-table .row-group{background:var(--paper2);font-weight:600;font-family:var(--sans)}
+.dcf-yr-table .row-total{border-top:2px solid var(--ink);font-weight:600}
+
+/* PROJECTIONS TABLE */
+.proj-table thead th{background:transparent}
+.proj-table .metric-group{background:var(--paper3);font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);padding:10px 12px 6px 0}
+.proj-table .highlight-row td{background:rgba(26,58,92,.05);font-weight:600}
+.proj-table .eps-row td{color:var(--acc)}
+
+/* SENS TABLE */
+.sens-tbl{font-family:var(--mono);font-size:11px;border-collapse:collapse;width:100%}
+.sens-tbl td,.sens-tbl th{padding:8px 10px;text-align:center;border:1px solid var(--rule)}
+.sens-tbl .rh{background:var(--paper2);font-weight:500}.sens-tbl .ch{background:var(--paper2);font-weight:500}.sens-tbl .cn{background:var(--paper3)}
+.h0{background:#fde8e4;color:#6b1a0e}.h1{background:#fff3cd;color:#664d03}
+.h2{background:var(--paper);color:var(--ink)}.h3{background:#d4edda;color:#1a4d2e}.h4{background:#b7dfc4;color:#0d3320}
+
+/* MC */
+.mc-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin-bottom:28px}
+.mc-stat{background:var(--paper);padding:18px 16px}
+.mc-stat-label{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink4);margin-bottom:6px}
+.mc-stat-val{font-family:var(--serif);font-size:20px;color:var(--ink)}
+.mc-stat-val.hl{color:var(--acc3)}
+#mc-canvas{width:100%;height:200px;display:block;margin-bottom:10px}
+
+/* FOOTBALL FIELD */
+.ff-row{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.ff-lbl{font-family:var(--mono);font-size:10px;color:var(--ink3);width:170px;flex-shrink:0}
+.ff-bw{flex:1;position:relative;height:26px;background:var(--paper2);border:1px solid var(--rule);border-radius:2px;overflow:hidden}
+.ff-b{position:absolute;top:0;height:100%;display:flex;align-items:center;padding:0 6px}
+.ff-bt{font-family:var(--mono);font-size:10px;color:#fff;white-space:nowrap;font-weight:500}
+.ff-pl{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--acc2);z-index:5}
+.ff-ptxt{position:absolute;top:-18px;font-family:var(--mono);font-size:9px;color:var(--acc2);transform:translateX(-50%);white-space:nowrap}
+.ff-rng{font-family:var(--mono);font-size:10px;color:var(--ink4);width:90px;flex-shrink:0;text-align:right}
+
+/* VERDICT */
+.verdict{border:1px solid var(--rule);padding:36px 44px;position:relative;margin-top:40px;background:var(--paper2)}
+.verdict::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--acc),var(--acc3))}
+.verdict-text{font-size:14px;color:var(--ink2);line-height:1.85;max-width:660px;margin-bottom:28px}
+.verdict-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:20px}
+.vi-label{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink4);margin-bottom:5px}
+.vi-val{font-family:var(--serif);font-size:20px;color:var(--ink)}
+.vi-val.vpos{color:var(--acc3)}.vi-val.vneg{color:var(--bear)}
+
+/* COMMENT BOX */
+.comment-display{border:1px solid var(--rule);border-left:3px solid var(--ink4);padding:16px 20px;margin-top:24px;font-size:13px;color:var(--ink3);line-height:1.75;font-style:italic;background:var(--paper2)}
+.comment-display:empty{display:none}
+.comment-label{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);margin-bottom:6px;font-style:normal}
+
+/* PEERS EDITOR inline */
+.peer-card{background:#161b22;border:1px solid #21262d;border-radius:4px;padding:12px;margin-bottom:8px}
+.peer-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-family:var(--mono);font-size:10px;color:#58a6ff;letter-spacing:1px}
+.rmv-btn{background:#c8401a;border:none;color:#fff;border-radius:3px;padding:2px 8px;cursor:pointer;font-size:10px}
+
+/* FOOTER */
+.site-footer{padding:40px 56px;border-top:1px solid var(--rule)}
+.footer-src{font-family:var(--mono);font-size:11px;color:var(--ink4);margin-bottom:14px;line-height:1.8}
+.footer-src a{color:var(--acc);text-decoration:none}
+.footer-disc{font-size:11px;color:var(--ink4);line-height:1.7;max-width:780px}
+
+/* DCF config pills */
+.dcf-config{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:28px;padding:16px 20px;background:var(--paper2);border:1px solid var(--rule);border-radius:4px}
+.dcf-config-item{font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.dcf-config-item span{color:var(--acc);font-weight:500}
+
+@media(max-width:900px){
+  #main{margin-right:0}
+  #panel{width:100%;transform:translateY(100vh)}
+  #panel.hidden{transform:translateY(100vh)}
+  #panel.shown{transform:translateY(0)}
+  .hero,.section,.site-header,.section-nav{padding-left:20px;padding-right:20px}
+  .scenarios{grid-template-columns:1fr}
+  .site-footer{padding:28px 20px}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDE PANEL -->
+<div id="panel">
+  <div id="panel-header">
+    <h2>⚙ Inputs &amp; Configuração</h2>
+    <button id="panel-close" onclick="togglePanel()">✕</button>
+  </div>
+  <div id="panel-body">
+    <!-- TABS -->
+    <div class="p-tabs">
+      <button class="p-tab active" onclick="switchTab('data')">Dados</button>
+      <button class="p-tab" onclick="switchTab('dcf')">DCF</button>
+      <button class="p-tab" onclick="switchTab('proj')">Projeções</button>
+      <button class="p-tab" onclick="switchTab('peers')">Peers</button>
+      <button class="p-tab" onclick="switchTab('texto')">Textos</button>
+    </div>
+
+    <!-- TAB: DADOS -->
+    <div class="p-section active" id="tab-data">
+      <div class="p-group">
+        <div class="p-group-title">Fetch automático</div>
+        <div class="p-hint">Introduz o ticker e clica Fetch para preencher automaticamente via Yahoo Finance (preço, Market Cap, P/E, EPS, yields, consenso). Depois podes editar o que quiseres.</div>
+        <div class="fetch-row" style="margin-top:10px">
+          <div class="p-row" style="margin:0;flex:1"><label>Ticker</label><input id="i-ticker" value="AAPL" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+          <button class="p-btn p-btn-primary" style="width:auto;padding:6px 14px;margin:0;align-self:flex-end" onclick="fetchData()">Fetch</button>
+        </div>
+        <div id="fetch-status"></div>
+      </div>
+      <div class="p-group">
+        <div class="p-group-title">Identificação</div>
+        <div class="p-row"><label>Nome completo</label><input id="i-name" value="Nome da Empresa"></div>
+        <div class="p-row"><label>Bolsa</label><input id="i-exchange" value="NASDAQ"></div>
+        <div class="p-row"><label>Sector / Indústria</label><input id="i-sector" value="Technology"></div>
+        <div class="p-row"><label>Data da análise</label><input id="i-date" value="Maio 2026"></div>
+        <div class="p-row"><label>Analista</label><input id="i-analyst" value="O teu nome"></div>
+      </div>
+      <div class="p-group">
+        <div class="p-group-title">Cotação e Mercado</div>
+        <div class="p-2col">
+          <div class="p-row"><label>Cotação ($)</label><input id="i-price" type="number" value="100" step="0.01"></div>
+          <div class="p-row"><label>Market Cap ($B)</label><input id="i-mktcap" type="number" value="50" step="0.1"></div>
+        </div>
+        <div class="p-2col">
+          <div class="p-row"><label>52w High ($)</label><input id="i-high" type="number" value="130"></div>
+          <div class="p-row"><label>52w Low ($)</label><input id="i-low" type="number" value="80"></div>
+        </div>
+        <div class="p-2col">
+          <div class="p-row"><label>Net Debt ($B)</label><input id="i-netdebt" type="number" value="5" step="0.1"></div>
+          <div class="p-row"><label>Shares (M)</label><input id="i-shares" type="number" value="500"></div>
+        </div>
+        <div class="p-row"><label>Rating de crédito</label><input id="i-rating" value="BBB+"></div>
+      </div>
+      <div class="p-group">
+        <div class="p-group-title">Métricas financeiras TTM</div>
+        <div class="p-2col">
+          <div class="p-row"><label>Receita ($B)</label><input id="i-rev" type="number" value="30" step="0.1"></div>
+          <div class="p-row"><label>EBITDA ($B)</label><input id="i-ebitda" type="number" value="8" step="0.1"></div>
+        </div>
+        <div class="p-2col">
+          <div class="p-row"><label>FCF ($B)</label><input id="i-fcf" type="number" value="5" step="0.1"></div>
+          <div class="p-row"><label>Net Income ($B)</label><input id="i-ni" type="number" value="4" step="0.1"></div>
+        </div>
+        <div class="p-2col">
+          <div class="p-row"><label>EPS TTM ($)</label><input id="i-eps" type="number" value="5" step="0.01"></div>
+          <div class="p-row"><label>EPS Fwd Y1 ($)</label><input id="i-epsfwd1" type="number" value="5.5" step="0.01"></div>
+        </div>
+        <div class="p-2col">
+          <div class="p-row"><label>EPS Fwd Y2 ($)</label><input id="i-epsfwd2" type="number" value="6.1" step="0.01"></div>
+          <div class="p-row"><label>Op. Margin (%)</label><input id="i-opmargin" type="number" value="25" step="0.1"></div>
+        </div>
+        <div class="p-2col">
+          <div class="p-row"><label>Gross Margin (%)</label><input id="i-gm" type="number" value="45" step="0.1"></div>
+          <div class="p-row"><label>Net Margin (%)</label><input id="i-nm" type="number" value="18" step="0.1"></div>
+        </div>
+        <div class="p-2col">
+          <div class="p-row"><label>Rev. Growth YoY (%)</label><input id="i-revg" type="number" value="10" step="0.1"></div>
+          <div class="p-row"><label>ROIC (%)</label><input id="i-roic" type="number" value="18" step="0.1"></div>
+        </div>
+      </div>
+      <div class="p-group">
+        <div class="p-group-title">Dividendos &amp; Remuneração</div>
+        <div class="p-2col">
+          <div class="p-row"><label>Div. Yield (%)</label><input id="i-divy" type="number" value="2" step="0.01"></div>
+          <div class="p-row"><label>Div. anos consec.</label><input id="i-divyr" type="number" value="10"></div>
+        </div>
+        <div class="p-2col">
+          <div class="p-row"><label>Payout Ratio (%)</label><input id="i-payout" type="number" value="40" step="0.1"></div>
+          <div class="p-row"><label>Buyback Yield (%)</label><input id="i-bby" type="number" value="2" step="0.01"></div>
+        </div>
+        <div class="p-2col">
+          <div class="p-row"><label>Div. CAGR 5A (%)</label><input id="i-divcagr" type="number" value="8" step="0.1"></div>
+          <div class="p-row"><label>SBC / Receita (%)</label><input id="i-sbc" type="number" value="2" step="0.1"></div>
+        </div>
+      </div>
+      <div class="p-group">
+        <div class="p-group-title">Médias históricas 5 anos</div>
+        <div class="p-2col">
+          <div class="p-row"><label>P/E médio 5A</label><input id="i-pe5" type="number" value="22" step="0.1"></div>
+          <div class="p-row"><label>EV/EBITDA médio 5A</label><input id="i-ev5" type="number" value="16" step="0.1"></div>
+        </div>
+        <div class="p-2col">
+          <div class="p-row"><label>P/FCF médio 5A</label><input id="i-pfcf5" type="number" value="24" step="0.1"></div>
+          <div class="p-row"><label>Div. Yield médio 5A (%)</label><input id="i-dy5" type="number" value="2.2" step="0.01"></div>
+        </div>
+      </div>
+      <div class="p-group">
+        <div class="p-group-title">Consenso analistas</div>
+        <div class="p-2col">
+          <div class="p-row"><label>Preço-alvo consenso ($)</label><input id="i-cons" type="number" value="130"></div>
+          <div class="p-row"><label>Nº analistas</label><input id="i-nana" type="number" value="25"></div>
+        </div>
+        <div class="p-row"><label>Rating consenso</label>
+          <select id="i-consrating">
+            <option>Strong Buy</option><option selected>Buy</option><option>Hold</option><option>Underperform</option><option>Sell</option>
+          </select>
+        </div>
+      </div>
+      <button class="p-btn p-btn-primary" onclick="renderAll()">▶ Actualizar</button>
+    </div>
+
+    <!-- TAB: DCF -->
+    <div class="p-section" id="tab-dcf">
+      <div class="p-group">
+        <div class="p-group-title">Configuração do modelo</div>
+        <div class="p-row"><label>Duração fase explícita (anos)</label>
+          <select id="i-dcfyrs">
+            <option value="5">5 anos</option>
+            <option value="7">7 anos</option>
+            <option value="10" selected>10 anos</option>
+            <option value="15">15 anos</option>
+          </select>
+        </div>
+        <div class="p-row"><label>Base do DCF</label>
+          <select id="i-dcfbase">
+            <option value="fcf" selected>Free Cash Flow (FCF)</option>
+            <option value="ebitda">EBITDA</option>
+            <option value="ni">Net Income</option>
+          </select>
+        </div>
+        <div class="p-row"><label>Método Valor Terminal</label>
+          <select id="i-tvmethod">
+            <option value="gordon" selected>Gordon Growth (perpetuidade)</option>
+            <option value="exit">Exit Multiple (EV/EBITDA)</option>
+          </select>
+        </div>
+        <div class="p-row" id="exit-mult-row" style="display:none"><label>Exit Multiple (EV/EBITDA)</label><input id="i-exitmult" type="number" value="15" step="0.5"></div>
+      </div>
+      <div class="p-group">
+        <div class="p-group-title">Cenário Base</div>
+        <div class="p-2col">
+          <div class="p-row"><label>WACC base (%)</label><input id="i-wacc" type="number" value="8" step="0.05"></div>
+          <div class="p-row"><label>Taxa imposto (%)</label><input id="i-tax" type="number" value="21" step="0.5"></div>
+        </div>
+        <div class="p-2col">
+          <div class="p-row"><label>Cresc. fase 1 (%/ano)</label><input id="i-g1" type="number" value="8" step="0.1"></div>
+          <div class="p-row"><label>Cresc. fase 2 (%/ano)</label><input id="i-g2" type="number" value="5" step="0.1"></div>
+        </div>
+        <div class="p-2col">
+          <div class="p-row"><label>Duração fase 1 (anos)</label><input id="i-phase1" type="number" value="5" min="1" max="14"></div>
+          <div class="p-row"><label>Terminal growth g (%)</label><input id="i-gtv" type="number" value="2.5" step="0.05"></div>
+        </div>
+        <div class="p-2col">
+          <div class="p-row"><label>CapEx / FCF ratio (%)</label><input id="i-capex" type="number" value="12" step="0.5"></div>
+          <div class="p-row"><label>FCF Conversion (%)</label><input id="i-fcfconv" type="number" value="95" step="1"></div>
+        </div>
+      </div>
+      <div class="p-group">
+        <div class="p-group-title">Ajustes cenário Bear</div>
+        <div class="p-2col">
+          <div class="p-row"><label>WACC +pp</label><input id="i-bear-wacc" type="number" value="0.75" step="0.05"></div>
+          <div class="p-row"><label>Crescimento –pp</label><input id="i-bear-g" type="number" value="2.5" step="0.1"></div>
+        </div>
+        <div class="p-row"><label>Terminal growth g (%)</label><input id="i-bear-gtv" type="number" value="2.0" step="0.05"></div>
+      </div>
+      <div class="p-group">
+        <div class="p-group-title">Ajustes cenário Bull</div>
+        <div class="p-2col">
+          <div class="p-row"><label>WACC –pp</label><input id="i-bull-wacc" type="number" value="0.5" step="0.05"></div>
+          <div class="p-row"><label>Crescimento +pp</label><input id="i-bull-g" type="number" value="2" step="0.1"></div>
+        </div>
+        <div class="p-row"><label>Terminal growth g (%)</label><input id="i-bull-gtv" type="number" value="3.0" step="0.05"></div>
+      </div>
+      <div class="p-group">
+        <div class="p-group-title">Sensibilidade</div>
+        <div class="p-hint">A tabela de sensibilidade mostra automaticamente ±1pp de WACC e ±1pp de terminal growth à volta das tuas premissas base.</div>
+      </div>
+      <button class="p-btn p-btn-primary" onclick="renderAll()">▶ Actualizar</button>
+    </div>
+
+    <!-- TAB: PROJEÇÕES -->
+    <div class="p-section" id="tab-proj">
+      <div class="p-group">
+        <div class="p-group-title">Base das projeções</div>
+        <div class="p-hint">Preenche o ano actual e os targets para 5 anos. Os valores intermédios interpolam automaticamente. Podes ajustar individualmente no editor abaixo.</div>
+        <div class="p-2col">
+          <div class="p-row"><label>Ano base</label><input id="i-yr0" type="number" value="2025"></div>
+          <div class="p-row"><label>Receita actual ($B)</label><input id="i-prev0" type="number" value="30" step="0.1"></div>
+        </div>
+        <div class="p-2col">
+          <div class="p-row"><label>Rev. CAGR 5A (%)</label><input id="i-revcagr" type="number" value="12" step="0.1"></div>
+          <div class="p-row"><label>Op. Margin actual (%)</label><input id="i-opm0" type="number" value="55" step="0.1"></div>
+        </div>
+        <div class="p-2col">
+          <div class="p-row"><label>Op. Margin Y5 (%)</label><input id="i-opm5" type="number" value="65" step="0.1"></div>
+          <div class="p-row"><label>Net Margin actual (%)</label><input id="i-nm0" type="number" value="45" step="0.1"></div>
+        </div>
+        <div class="p-2col">
+          <div class="p-row"><label>Net Margin Y5 (%)</label><input id="i-nm5" type="number" value="50" step="0.1"></div>
+          <div class="p-row"><label>Dilution / Buyback (%)</label><input id="i-dil" type="number" value="-2" step="0.1"></div>
+        </div>
+        <div class="p-row"><label>Shares actuais (M)</label><input id="i-sh0" type="number" value="880"></div>
+      </div>
+      <div class="p-group">
+        <div class="p-group-title">P/E estimados</div>
+        <div class="p-3col">
+          <div class="p-row"><label>P/E Low</label><input id="i-pe-lo" type="number" value="25"></div>
+          <div class="p-row"><label>P/E Mid</label><input id="i-pe-mi" type="number" value="30"></div>
+          <div class="p-row"><label>P/E High</label><input id="i-pe-hi" type="number" value="35"></div>
+        </div>
+        <div class="p-note">Bear usa P/E Low, Base usa Mid, Bull usa High.</div>
+      </div>
+      <div class="p-group">
+        <div class="p-group-title">OPEX growth</div>
+        <div class="p-row"><label>OPEX growth anual (%)</label><input id="i-opexg" type="number" value="10" step="0.1"></div>
+        <div class="p-row"><label>OPEX Y0 ($B)</label><input id="i-opex0" type="number" value="13.89" step="0.01"></div>
+      </div>
+      <button class="p-btn p-btn-primary" onclick="renderAll()">▶ Actualizar</button>
+    </div>
+
+    <!-- TAB: PEERS -->
+    <div class="p-section" id="tab-peers">
+      <div class="p-group">
+        <div class="p-group-title">Peers</div>
+        <div id="peers-cont"></div>
+        <button class="p-btn p-btn-ghost" onclick="addPeer()" style="margin-top:10px">+ Adicionar peer</button>
+      </div>
+      <button class="p-btn p-btn-primary" onclick="renderAll()">▶ Actualizar</button>
+    </div>
+
+    <!-- TAB: TEXTOS -->
+    <div class="p-section" id="tab-texto">
+      <div class="p-group">
+        <div class="p-group-title">Veredicto final</div>
+        <div class="p-row"><label>Valor justo central</label><input id="i-vfair" value="$110–$130"></div>
+        <div class="p-row"><label>Margem de segurança</label>
+          <select id="i-mseg"><option>Elevada (>20%)</option><option selected>Razoável</option><option>Limitada</option><option>Negativa</option></select>
+        </div>
+        <div class="p-row"><label>Recomendação</label>
+          <select id="i-rec"><option>Comprar</option><option selected>Comprar em fraqueza</option><option>Acompanhar</option><option>Não investir</option><option>Vender</option></select>
+        </div>
+        <div class="p-row"><label>Convicção</label>
+          <select id="i-conv"><option>Alta</option><option selected>Média</option><option>Baixa</option></select>
+        </div>
+        <div class="p-row"><label>Texto do veredicto</label>
+          <textarea id="i-verdict">Escreve aqui o teu argumento de investimento. Inclui os principais drivers de valor, riscos identificados e catalisadores que sustentam a tese.</textarea>
+        </div>
+      </div>
+      <div class="p-group">
+        <div class="p-group-title">Comentários por secção</div>
+        <div class="p-row"><label>Comentário — Snapshot</label><textarea id="c-snap" placeholder="Ex: O título transaciona perto do mínimo de 52 semanas após pressão cambial..."></textarea></div>
+        <div class="p-row"><label>Comentário — Múltiplos</label><textarea id="c-mult" placeholder="Ex: O P/E forward está abaixo da média histórica, sugerindo desconto relativo..."></textarea></div>
+        <div class="p-row"><label>Comentário — Peers</label><textarea id="c-peers" placeholder="Ex: A empresa tem margens operacionais superiores à média do sector..."></textarea></div>
+        <div class="p-row"><label>Comentário — DCF</label><textarea id="c-dcf" placeholder="Ex: O WACC de 8% reflecte o perfil de risco moderado e o rating BBB+..."></textarea></div>
+        <div class="p-row"><label>Comentário — Projeções</label><textarea id="c-proj" placeholder="Ex: O cenário base assume CAGR de receita de 12% sustentado pela expansão internacional..."></textarea></div>
+        <div class="p-row"><label>Comentário — Monte Carlo</label><textarea id="c-mc" placeholder="Ex: A distribuição confirma assimetria positiva — 70% dos cenários acima do preço actual..."></textarea></div>
+      </div>
+      <div class="p-group">
+        <div class="p-group-title">Fontes</div>
+        <div class="p-row"><textarea id="i-sources" style="min-height:50px">Stock Analysis, Macrotrends, GuruFocus, Morningstar, SEC Filings</textarea></div>
+      </div>
+      <button class="p-btn p-btn-primary" onclick="renderAll()">▶ Actualizar</button>
+    </div>
+
+  </div><!-- /panel-body -->
+</div><!-- /panel -->
+
+<button id="toggle-btn" class="open" onclick="togglePanel()">EDITOR</button>
+
+<!-- MAIN -->
+<div id="main">
+
+<header class="site-header">
+  <div class="header-left">
+    <div class="logo" id="h-logo">AF</div>
+    <div class="header-meta" id="h-meta">Análise Fundamental · TICKER · Valuation</div>
+  </div>
+  <span class="header-pill" id="h-date">—</span>
+</header>
+
+<div class="hero">
+  <div class="hero-label">Análise Fundamental · Valuation</div>
+  <h1 class="hero-title">Valuation <span id="h-name">—</span></h1>
+  <div class="hero-meta" id="h-hero-meta">—</div>
+  <p class="hero-desc" id="h-desc">Valuation triangulado por múltiplas metodologias independentes: múltiplos de mercado, comparação com peers, modelo DCF ano a ano com três cenários, projeções financeiras e simulação Monte Carlo de 10.000 iterações.</p>
+</div>
+
+<nav class="section-nav">
+  <a class="nav-item" href="#s01">01 Snapshot</a>
+  <a class="nav-item" href="#s02">02 Múltiplos</a>
+  <a class="nav-item" href="#s03">03 Peers</a>
+  <a class="nav-item" href="#s04">04 DCF</a>
+  <a class="nav-item" href="#s05">05 Projeções</a>
+  <a class="nav-item" href="#s06">06 Monte Carlo</a>
+  <a class="nav-item" href="#s07">07 Triangulação</a>
+</nav>
+
+<!-- 01 SNAPSHOT -->
+<section class="section" id="s01">
+  <div class="s-num">01 · Snapshot de Mercado</div>
+  <h2 class="s-title">Onde está o preço hoje</h2>
+  <p class="s-sub" id="snap-sub">Fotografia da cotação e dos dados chave de mercado.</p>
+  <div class="explain-box">
+    <strong>Como ler este snapshot</strong>
+    Este painel resume os dados de mercado mais relevantes. O <em>FCF Yield</em> (Free Cash Flow / Market Cap) mede quanto de caixa livre a empresa gera por dólar investido — quanto maior, mais atrativo. O <em>Earnings Yield</em> é o inverso do P/E e permite comparar com obrigações. O <em>Shareholder Yield</em> combina dividendo + buybacks como retorno direto ao acionista.
+  </div>
+  <div class="data-status" id="data-status"><div class="dot-manual"></div><span id="data-status-text">Dados inseridos manualmente — clica Fetch no editor para actualizar automaticamente</span></div>
+  <div class="cards-grid" id="snap-cards"></div>
+  <div class="comment-display" id="cd-snap"><div class="comment-label">Comentário do analista</div><span id="ct-snap"></span></div>
+</section>
+
+<!-- 02 MÚLTIPLOS -->
+<section class="section" id="s02">
+  <div class="s-num">02 · Múltiplos de Valuation</div>
+  <h2 class="s-title">Múltiplos TTM e Forward</h2>
+  <p class="s-sub">Comparação dos múltiplos actuais com a média histórica de 5 anos da própria empresa.</p>
+  <div class="explain-box">
+    <strong>Como interpretar os múltiplos</strong>
+    Um múltiplo em <span style="color:var(--acc3);font-weight:600">Desconto</span> significa que o título está mais barato do que o seu próprio historial — pode indicar oportunidade ou deterioração dos fundamentais. Um múltiplo em <span style="color:var(--bear);font-weight:600">Prémio</span> significa que o mercado está a pagar acima da média histórica — pode reflectir melhorias nos fundamentais ou excesso de otimismo. O <strong>EV/EBITDA</strong> é neutro à estrutura de capital e ideal para comparar empresas com dívidas diferentes. O <strong>P/FCF</strong> é mais difícil de manipular contabilisticamente do que o P/E.
+  </div>
+  <div class="tbl-wrap"><table id="mult-tbl"></table></div>
+  <div class="comment-display" id="cd-mult"><div class="comment-label">Comentário do analista</div><span id="ct-mult"></span></div>
+</section>
+
+<!-- 03 PEERS -->
+<section class="section" id="s03">
+  <div class="s-num">03 · Comparação com Peers</div>
+  <h2 class="s-title" id="peers-title">Análise Competitiva</h2>
+  <p class="s-sub" id="peers-sub">Posicionamento relativo face aos principais concorrentes cotados.</p>
+  <div class="explain-box">
+    <strong>Como usar a tabela de peers</strong>
+    Compara a empresa em análise com concorrentes diretos. Uma empresa com margens operacionais superiores mas P/E inferior ao do setor pode estar subavaliada. Atenção ao modelo de negócio: empresas com franchising ou software têm margens estruturalmente mais altas — comparar com retalhistas é um erro comum. Adiciona peers no editor (separador Peers).
+  </div>
+  <div class="tbl-wrap"><table id="peers-tbl"></table></div>
+  <div class="comment-display" id="cd-peers"><div class="comment-label">Comentário do analista</div><span id="ct-peers"></span></div>
+</section>
+
+<!-- 04 DCF -->
+<section class="section" id="s04">
+  <div class="s-num">04 · Modelo DCF</div>
+  <h2 class="s-title">Discounted Cash Flow — Ano a Ano</h2>
+  <p class="s-sub">Projeção explícita dos fluxos de caixa futuros, descontados ao valor presente. Três cenários com premissas distintas.</p>
+  <div class="explain-box">
+    <strong>O que é o DCF e como ler este modelo</strong>
+    O DCF (Discounted Cash Flow) estima o valor de uma empresa descontando os seus fluxos de caixa futuros para o presente. O conceito-chave: 1 dólar hoje vale mais do que 1 dólar amanhã (custo de oportunidade). O <strong>WACC</strong> (custo médio ponderado de capital) é a taxa de desconto — quanto maior, menos valem os fluxos futuros. O <strong>Valor Terminal</strong> captura todos os fluxos depois do período explícito e representa tipicamente 60–80% do valor total — por isso é tão sensível ao WACC e ao crescimento terminal. A tabela de sensibilidade mostra como o preço justo muda com pequenas variações nestas duas variáveis.
+  </div>
+  <div class="dcf-config" id="dcf-config"></div>
+  <div class="scenarios" id="dcf-scenarios"></div>
+  <h3 style="font-family:var(--serif);font-size:22px;margin-bottom:20px;margin-top:40px">Projeção ano a ano — Cenário Base</h3>
+  <div class="tbl-wrap"><table class="dcf-yr-table" id="dcf-yr-tbl"></table></div>
+  <h3 style="font-family:var(--serif);font-size:22px;margin-bottom:20px;margin-top:40px">Sensibilidade — WACC × Crescimento terminal</h3>
+  <div class="explain-box warn">
+    <strong>Leitura da tabela de sensibilidade</strong>
+    Cada célula mostra o preço justo para uma combinação de WACC e taxa de crescimento terminal. As células <span style="background:#d4edda;color:#1a4d2e;padding:1px 6px;border-radius:2px;font-size:11px">verdes</span> indicam upside face ao preço actual; as <span style="background:#fde8e4;color:#6b1a0e;padding:1px 6px;border-radius:2px;font-size:11px">vermelhas</span> indicam downside. O teu cenário base está na interseção central.
+  </div>
+  <div class="tbl-wrap"><table class="sens-tbl" id="sens-tbl"></table></div>
+  <div class="comment-display" id="cd-dcf"><div class="comment-label">Comentário do analista</div><span id="ct-dcf"></span></div>
+</section>
+
+<!-- 05 PROJEÇÕES -->
+<section class="section" id="s05">
+  <div class="s-num">05 · Projeções Financeiras</div>
+  <h2 class="s-title">Base · Bull · Bear — 5 anos</h2>
+  <p class="s-sub">Projeções financeiras anuais com preços-alvo implícitos em cada cenário.</p>
+  <div class="explain-box">
+    <strong>Como ler as projeções</strong>
+    Esta tabela funciona como o modelo que estás habituado a ver em relatórios de equity research. Para cada ano projeta-se a receita, OPEX, resultado operacional e líquido, EPS, e depois aplica-se um range de P/E múltiplos para chegar ao preço-alvo implícito. O <strong>CAGR MID</strong> na linha de baixo mostra qual o retorno anualizado até esse ano partindo da cotação actual — é a métrica que deves usar para comparar entre cenários e entre empresas. A dilution por buybacks reduz as shares outstanding e aumenta o EPS mesmo com crescimento de lucro estável.
+  </div>
+  <h3 style="font-family:var(--serif);font-size:20px;margin-bottom:16px;color:var(--base-c)">Base Case</h3>
+  <div class="tbl-wrap"><table class="proj-table" id="proj-base"></table></div>
+  <h3 style="font-family:var(--serif);font-size:20px;margin-bottom:16px;margin-top:36px;color:var(--bull)">Bull Case</h3>
+  <div class="tbl-wrap"><table class="proj-table" id="proj-bull"></table></div>
+  <h3 style="font-family:var(--serif);font-size:20px;margin-bottom:16px;margin-top:36px;color:var(--bear)">Bear Case</h3>
+  <div class="tbl-wrap"><table class="proj-table" id="proj-bear"></table></div>
+  <div class="comment-display" id="cd-proj"><div class="comment-label">Comentário do analista</div><span id="ct-proj"></span></div>
+</section>
+
+<!-- 06 MC -->
+<section class="section" id="s06">
+  <div class="s-num">06 · Simulação Monte Carlo</div>
+  <h2 class="s-title">10.000 iterações probabilísticas</h2>
+  <p class="s-sub">Cada input do DCF é tratado como distribuição normal — em vez de um valor único, o modelo simula 10.000 cenários e gera uma distribuição de valores intrínsecos possíveis.</p>
+  <div class="explain-box">
+    <strong>Porquê Monte Carlo em vez de um DCF simples?</strong>
+    Um DCF tradicional dá-te um único número — mas o futuro nunca é um único cenário. O Monte Carlo simula 10.000 combinações aleatórias de crescimento, WACC e crescimento terminal (com distribuição normal à volta das tuas premissas base). O resultado é uma distribuição de preços justos possíveis. O <strong>P(valor &gt; preço actual)</strong> mostra em que percentagem dos cenários simulados a empresa está subavaliada — acima de 70% é sinal de assimetria favorável. O <strong>P10</strong> e <strong>P90</strong> delimitam o intervalo de confiança de 80%.
+  </div>
+  <p class="p-note" id="mc-loading" style="color:var(--ink4);font-family:var(--mono);font-size:12px;padding:12px 0">A correr simulação…</p>
+  <div class="mc-stats" id="mc-stats" style="display:none"></div>
+  <canvas id="mc-canvas" style="display:none"></canvas>
+  <div id="mc-legend" style="display:none;font-family:var(--mono);font-size:11px;color:var(--ink4);display:none;gap:20px;margin-top:8px;flex-wrap:wrap"></div>
+  <div class="comment-display" id="cd-mc"><div class="comment-label">Comentário do analista</div><span id="ct-mc"></span></div>
+</section>
+
+<!-- 07 TRIANGULAÇÃO -->
+<section class="section" id="s07">
+  <div class="s-num">07 · Triangulação</div>
+  <h2 class="s-title">Football Field — síntese de métodos</h2>
+  <p class="s-sub">Cada metodologia gera um intervalo de valor justo. A linha vermelha marca o preço actual.</p>
+  <div class="explain-box good">
+    <strong>Como interpretar o Football Field</strong>
+    O Football Field sobrepõe os resultados de todas as metodologias num único gráfico. Quando a maioria dos intervalos está <strong>acima</strong> do preço actual (linha vermelha), a convergência de métodos sugere subavaliação. Quando os intervalos são muito dispersos, as incertezas são elevadas e o modelo precisa de mais rigor nas premissas. O consenso de analistas serve como anchor de mercado externo.
+  </div>
+  <div id="ff-wrap"></div>
+  <div class="verdict" id="verdict-box"></div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-src" id="footer-src"></div>
+  <div class="footer-disc">Documento de apoio à análise fundamental, elaborado com fins educativos e informativos. Não constitui recomendação de investimento, aconselhamento financeiro nem oferta de compra ou venda de valores mobiliários. Os modelos DCF e Monte Carlo assentam em pressupostos do analista e são sensíveis a alterações desses pressupostos. Rentabilidades passadas não garantem resultados futuros.</div>
+</footer>
+
+</div><!-- /main -->
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════════════════════
+const g=id=>document.getElementById(id);
+const gv=id=>parseFloat(g(id)?.value)||0;
+const gs=id=>g(id)?.value?.trim()||'';
+const fmt=(v,d=1)=>v==null?'—':v.toFixed(d);
+const fmtD=(v)=>v>=0?`+${v.toFixed(1)}%`:`${v.toFixed(1)}%`;
+const fmtB=(v)=>`$${v.toFixed(1)}B`;
+const fmtM=(v)=>`$${v.toFixed(0)}M`;
+
+// ══════════════════════════════════════════════════════════════
+// PEERS STATE
+// ══════════════════════════════════════════════════════════════
+let peers=[
+  {ticker:'PEER1',name:'Peer 1',pfwd:'22x',evebitda:'16x',divy:'1.5%',opmargin:'20%',netmargin:'15%',rating:'Buy',moat:'Narrow'},
+  {ticker:'PEER2',name:'Peer 2',pfwd:'26x',evebitda:'19x',divy:'0%',opmargin:'18%',netmargin:'12%',rating:'Hold',moat:'None'},
+];
+function addPeer(){peers.push({ticker:'NEW',name:'Nome',pfwd:'—',evebitda:'—',divy:'—',opmargin:'—',netmargin:'—',rating:'Hold',moat:'—'});renderPeerEditor();}
+function removePeer(i){peers.splice(i,1);renderPeerEditor();}
+function renderPeerEditor(){
+  const c=g('peers-cont');c.innerHTML='';
+  peers.forEach((p,i)=>{
+    const d=document.createElement('div');d.className='peer-card';
+    d.innerHTML=`<div class="peer-card-head"><span>PEER ${i+1}</span><button class="rmv-btn" onclick="removePeer(${i})">✕</button></div>
+    <div class="p-2col"><div class="p-row"><label>Ticker</label><input value="${p.ticker}" onchange="peers[${i}].ticker=this.value"></div><div class="p-row"><label>Rating</label><input value="${p.rating}" onchange="peers[${i}].rating=this.value"></div></div>
+    <div class="p-row"><label>Nome</label><input value="${p.name}" onchange="peers[${i}].name=this.value"></div>
+    <div class="p-2col"><div class="p-row"><label>P/E Fwd</label><input value="${p.pfwd}" onchange="peers[${i}].pfwd=this.value"></div><div class="p-row"><label>EV/EBITDA</label><input value="${p.evebitda}" onchange="peers[${i}].evebitda=this.value"></div></div>
+    <div class="p-2col"><div class="p-row"><label>Div Yield</label><input value="${p.divy}" onchange="peers[${i}].divy=this.value"></div><div class="p-row"><label>Op. Margin</label><input value="${p.opmargin}" onchange="peers[${i}].opmargin=this.value"></div></div>
+    <div class="p-2col"><div class="p-row"><label>Net Margin</label><input value="${p.netmargin}" onchange="peers[${i}].netmargin=this.value"></div><div class="p-row"><label>MOAT</label><input value="${p.moat}" onchange="peers[${i}].moat=this.value"></div></div>`;
+    c.appendChild(d);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// FETCH DATA (Yahoo Finance via proxy)
+// ══════════════════════════════════════════════════════════════
+async function fetchData(){
+  const ticker=gs('i-ticker');
+  const st=g('fetch-status');
+  st.innerHTML=`<span style="color:#8b949e;font-family:var(--mono);font-size:11px">A carregar ${ticker}…</span>`;
+  try{
+    // Use Yahoo Finance unofficial API via CORS proxy
+    const url=`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${ticker}?modules=price,summaryDetail,defaultKeyStatistics,financialData,earnings`;
+    const proxyUrl=`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    const res=await fetch(proxyUrl);
+    const outer=await res.json();
+    const data=JSON.parse(outer.contents);
+    const r=data.quoteSummary?.result?.[0];
+    if(!r) throw new Error('Ticker não encontrado');
+    const price=r.price;
+    const sd=r.summaryDetail;
+    const ks=r.defaultKeyStatistics;
+    const fd=r.financialData;
+
+    // Fill fields
+    if(price?.regularMarketPrice?.raw) g('i-price').value=price.regularMarketPrice.raw.toFixed(2);
+    if(price?.marketCap?.raw) g('i-mktcap').value=(price.marketCap.raw/1e9).toFixed(2);
+    if(price?.longName||price?.shortName) g('i-name').value=price.longName||price.shortName;
+    if(price?.exchange) g('i-exchange').value=price.exchange;
+    if(sd?.fiftyTwoWeekHigh?.raw) g('i-high').value=sd.fiftyTwoWeekHigh.raw.toFixed(2);
+    if(sd?.fiftyTwoWeekLow?.raw) g('i-low').value=sd.fiftyTwoWeekLow.raw.toFixed(2);
+    if(ks?.sharesOutstanding?.raw) g('i-shares').value=(ks.sharesOutstanding.raw/1e6).toFixed(0);
+    if(fd?.totalDebt?.raw&&fd?.totalCash?.raw){
+      const nd=(fd.totalDebt.raw-fd.totalCash.raw)/1e9;
+      g('i-netdebt').value=nd.toFixed(2);
+    }
+    if(fd?.totalRevenue?.raw) g('i-rev').value=(fd.totalRevenue.raw/1e9).toFixed(2);
+    if(fd?.ebitda?.raw) g('i-ebitda').value=(fd.ebitda.raw/1e9).toFixed(2);
+    if(fd?.freeCashflow?.raw) g('i-fcf').value=(fd.freeCashflow.raw/1e9).toFixed(2);
+    if(fd?.netIncomeToCommon?.raw) g('i-ni').value=(fd.netIncomeToCommon.raw/1e9).toFixed(2);
+    if(ks?.trailingEps?.raw) g('i-eps').value=ks.trailingEps.raw.toFixed(2);
+    if(ks?.forwardEps?.raw) g('i-epsfwd1').value=ks.forwardEps.raw.toFixed(2);
+    if(fd?.operatingMargins?.raw) g('i-opmargin').value=(fd.operatingMargins.raw*100).toFixed(1);
+    if(fd?.grossMargins?.raw) g('i-gm').value=(fd.grossMargins.raw*100).toFixed(1);
+    if(fd?.profitMargins?.raw) g('i-nm').value=(fd.profitMargins.raw*100).toFixed(1);
+    if(sd?.dividendYield?.raw) g('i-divy').value=(sd.dividendYield.raw*100).toFixed(2);
+    if(sd?.payoutRatio?.raw) g('i-payout').value=(sd.payoutRatio.raw*100).toFixed(1);
+    if(fd?.revenueGrowth?.raw) g('i-revg').value=(fd.revenueGrowth.raw*100).toFixed(1);
+    if(fd?.returnOnCapital?.raw||ks?.returnOnEquity?.raw) g('i-roic').value=((fd.returnOnCapital?.raw||ks.returnOnEquity?.raw||0)*100).toFixed(1);
+    if(fd?.targetMeanPrice?.raw) g('i-cons').value=fd.targetMeanPrice.raw.toFixed(2);
+    if(fd?.numberOfAnalystOpinions?.raw) g('i-nana').value=fd.numberOfAnalystOpinions.raw;
+
+    // Update revenue for projections
+    if(fd?.totalRevenue?.raw) g('i-prev0').value=(fd.totalRevenue.raw/1e9).toFixed(2);
+    if(fd?.operatingMargins?.raw) g('i-opm0').value=(fd.operatingMargins.raw*100).toFixed(1);
+    if(fd?.profitMargins?.raw) g('i-nm0').value=(fd.profitMargins.raw*100).toFixed(1);
+    if(ks?.sharesOutstanding?.raw) g('i-sh0').value=(ks.sharesOutstanding.raw/1e6).toFixed(0);
+
+    st.innerHTML=`<span class="p-badge p-badge-ok">✓ ${ticker} carregado com sucesso</span>`;
+    g('data-status').innerHTML=`<div class="dot-live"></div><span>Dados actualizados automaticamente via Yahoo Finance — ${new Date().toLocaleTimeString('pt-PT')}</span>`;
+    g('data-status-text')&&(g('data-status-text').textContent=`Dados carregados automaticamente via Yahoo Finance — ${new Date().toLocaleString('pt-PT')}`);
+    renderAll();
+  }catch(e){
+    st.innerHTML=`<span class="p-badge p-badge-err">✗ Erro: ${e.message}. Preenche manualmente.</span>`;
+    console.error(e);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// DCF CALCULATION
+// ══════════════════════════════════════════════════════════════
+function calcDCF(fcfB, wacc, g1, g2, gTerm, phase1, totalYrs, netDebtB, sharesM, tvMethod, exitMult, ebitdaB){
+  const wD=wacc/100,g1D=g1/100,g2D=g2/100,gTD=gTerm/100;
+  let cf=fcfB*1e9;
+  let totalPV=0;
+  const yearRows=[];
+  for(let y=1;y<=totalYrs;y++){
+    const rate=y<=phase1?g1D:g2D;
+    cf*=(1+rate);
+    const pv=cf/Math.pow(1+wD,y);
+    totalPV+=pv;
+    yearRows.push({year:y,cf,rate:y<=phase1?g1:g2,pv,cumPV:totalPV});
+  }
+  let tv,pvTV;
+  if(tvMethod==='gordon'){
+    tv=cf*(1+gTD)/(wD-gTD);
+    pvTV=tv/Math.pow(1+wD,totalYrs);
+  } else {
+    tv=ebitdaB*1e9*exitMult;
+    pvTV=tv/Math.pow(1+wD,totalYrs);
+  }
+  const ev=totalPV+pvTV;
+  const equity=ev-netDebtB*1e9;
+  const price=equity/(sharesM*1e6);
+  return{price,ev,pvTV,totalPV,tvPct:pvTV/ev*100,yearRows,cf};
+}
+
+// ══════════════════════════════════════════════════════════════
+// PROJECTIONS
+// ══════════════════════════════════════════════════════════════
+function buildProjections(scenario){
+  const yr0=gv('i-yr0')||2025;
+  const rev0=gv('i-prev0');
+  const cagr=gv('i-revcagr')+(scenario==='bull'?3:scenario==='bear'?-3:0);
+  const opm0=gv('i-opm0');
+  const opm5=gv('i-opm5')+(scenario==='bull'?3:scenario==='bear'?-3:0);
+  const nm0=gv('i-nm0');
+  const nm5=gv('i-nm5')+(scenario==='bull'?3:scenario==='bear'?-3:0);
+  const dil=gv('i-dil')+(scenario==='bull'?-0.5:scenario==='bear'?0.5:0);
+  const sh0=gv('i-sh0');
+  const opex0=gv('i-opex0');
+  const opexg=gv('i-opexg')+(scenario==='bull'?-1:scenario==='bear'?2:0);
+  const peLo=gv('i-pe-lo');
+  const peMi=gv('i-pe-mi');
+  const peHi=gv('i-pe-hi');
+  const price=gv('i-price');
+
+  const rows=[];
+  for(let y=0;y<=5;y++){
+    const rev=rev0*Math.pow(1+cagr/100,y);
+    const revGrowth=y===0?null:cagr;
+    const opm=opm0+(opm5-opm0)*y/5;
+    const nm=nm0+(nm5-nm0)*y/5;
+    const opInc=rev*opm/100;
+    const ni=rev*nm/100;
+    const opex=opex0*Math.pow(1+opexg/100,y);
+    const opexGrowth=y===0?null:opexg;
+    const shares=sh0*Math.pow(1+dil/100,y);
+    const eps=ni*1e9/(shares*1e6);
+    const priceLo=eps*peLo;
+    const priceMi=eps*peMi;
+    const priceHi=eps*peHi;
+    const mktMid=priceMi*shares/1000; // $B
+    const cagr_mid=y===0?null:Math.pow(priceMi/price,1/y)*100-100;
+    rows.push({y,yr:yr0+y,rev,revGrowth,opm,opInc,nm,ni,opex,opexGrowth,shares,eps,priceLo,priceMi,priceHi,mktMid,cagrMid:cagr_mid});
+  }
+  return rows;
+}
+
+function renderProjTable(elId, rows, scenario){
+  const el=g(elId); if(!el)return;
+  const cols=['2025 (Actual)',...rows.slice(1).map(r=>r.yr.toString())];
+  const price=gv('i-price');
+  const color=scenario==='bull'?'var(--bull)':scenario==='bear'?'var(--bear)':'var(--base-c)';
+  const fmt2=(v,d=2,prefix='$')=>`${prefix}${v.toFixed(d)}`;
+  el.innerHTML=`<thead><tr><th>MÉTRICA</th>${cols.map(c=>`<th class="mono">${c}</th>`).join('')}</tr></thead><tbody>
+    <tr class="highlight-row"><td>RECEITA ($B)</td>${rows.map(r=>`<td class="mono">$${r.rev.toFixed(2)}</td>`).join('')}</tr>
+    <tr><td style="color:var(--ink4);font-size:12px">REV GROWTH</td>${rows.map(r=>`<td class="mono" style="color:var(--ink4)">${r.revGrowth==null?'—':r.revGrowth.toFixed(0)+'%'}</td>`).join('')}</tr>
+    <tr><td>OPERATING EXPENSE ($B)</td>${rows.map(r=>`<td class="mono">$${r.opex.toFixed(2)}</td>`).join('')}</tr>
+    <tr><td style="color:var(--ink4);font-size:12px">OPEX GROWTH</td>${rows.map(r=>`<td class="mono" style="color:var(--ink4)">${r.opexGrowth==null?'—':r.opexGrowth.toFixed(0)+'%'}</td>`).join('')}</tr>
+    <tr class="highlight-row"><td>OPERATING INCOME ($B)</td>${rows.map(r=>`<td class="mono">$${r.opInc.toFixed(2)}</td>`).join('')}</tr>
+    <tr><td style="color:var(--ink4);font-size:12px">OP. INC MARGIN</td>${rows.map(r=>`<td class="mono" style="color:var(--ink4)">${r.opm.toFixed(1)}%</td>`).join('')}</tr>
+    <tr class="highlight-row"><td>NET INCOME ($B)</td>${rows.map(r=>`<td class="mono">$${r.ni.toFixed(2)}</td>`).join('')}</tr>
+    <tr><td style="color:var(--ink4);font-size:12px">NET MARGINS</td>${rows.map(r=>`<td class="mono" style="color:var(--ink4)">${r.nm.toFixed(1)}%</td>`).join('')}</tr>
+    <tr><td>SHARES OUTSTANDING</td>${rows.map(r=>`<td class="mono">${r.shares.toFixed(0)}M</td>`).join('')}</tr>
+    <tr><td style="color:var(--ink4);font-size:12px">DILUTION (Buybacks)</td>${rows.map(r=>`<td class="mono" style="color:var(--ink4)">${r.revGrowth==null?'—':(gv('i-dil')+(scenario==='bull'?-0.5:scenario==='bear'?0.5:0)).toFixed(0)+'%'}</td>`).join('')}</tr>
+    <tr class="eps-row"><td><strong>EPS</strong></td>${rows.map(r=>`<td class="mono" style="color:${color};font-weight:600">$${r.eps.toFixed(2)}</td>`).join('')}</tr>
+    <tr><td style="color:var(--ink4);font-size:12px">PE LOW EST</td>${rows.map((r,i)=>`<td class="mono" style="color:var(--ink4)">${i===0?'—':gv('i-pe-lo').toFixed(0)}</td>`).join('')}</tr>
+    <tr><td style="color:var(--ink4);font-size:12px">PE MID EST</td>${rows.map((r,i)=>`<td class="mono" style="color:var(--ink4)">${i===0?'—':gv('i-pe-mi').toFixed(0)}</td>`).join('')}</tr>
+    <tr><td style="color:var(--ink4);font-size:12px">PE HIGH EST</td>${rows.map((r,i)=>`<td class="mono" style="color:var(--ink4)">${i===0?'—':gv('i-pe-hi').toFixed(0)}</td>`).join('')}</tr>
+    <tr><td style="color:var(--bear)">SHARE PRICE LOW</td>${rows.map((r,i)=>`<td class="mono" style="color:var(--bear)">${i===0?'—':'$'+r.priceLo.toFixed(0)}</td>`).join('')}</tr>
+    <tr class="highlight-row"><td>SHARE PRICE MID</td>${rows.map((r,i)=>`<td class="mono" style="color:${color};font-weight:600">${i===0?'—':'$'+r.priceMi.toFixed(0)}</td>`).join('')}</tr>
+    <tr><td style="color:var(--bull)">SHARE PRICE HIGH</td>${rows.map((r,i)=>`<td class="mono" style="color:var(--bull)">${i===0?'—':'$'+r.priceHi.toFixed(0)}</td>`).join('')}</tr>
+    <tr><td style="color:var(--ink4);font-size:12px">MARKET CAP MID ($B)</td>${rows.map((r,i)=>`<td class="mono" style="color:var(--ink4)">${i===0?'—':'$'+r.mktMid.toFixed(0)}</td>`).join('')}</tr>
+    <tr class="highlight-row"><td style="color:${color}">CAGR MID (do preço $${price.toFixed(0)})</td>${rows.map((r,i)=>`<td class="mono" style="color:${color};font-weight:600">${i===0?'—':r.cagrMid.toFixed(1)+'%'}</td>`).join('')}</tr>
+  </tbody>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// MONTE CARLO
+// ══════════════════════════════════════════════════════════════
+function randn(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function runMC(){
+  const fcf=gv('i-fcf'),wacc=gv('i-wacc'),g1=gv('i-g1'),g2=gv('i-g2'),gtv=gv('i-gtv');
+  const nd=gv('i-netdebt'),sh=gv('i-shares'),price=gv('i-price');
+  const ph1=gv('i-phase1'),totalYrs=gv('i-dcfyrs');
+  const tvM=gs('i-tvmethod'),em=gv('i-exitmult'),ebitda=gv('i-ebitda');
+  const N=10000;const results=[];
+  for(let i=0;i<N;i++){
+    const wS=wacc+randn()*0.5,g1S=g1+randn()*1.5,g2S=g2+randn()*1.0,gS=gtv+randn()*0.35,fcfS=fcf+randn()*fcf*0.06;
+    try{const r=calcDCF(fcfS,wS,g1S,g2S,gS,ph1,totalYrs,nd,sh,tvM,em,ebitda);if(r.price>0&&r.price<price*10)results.push(r.price);}catch(e){}
+  }
+  results.sort((a,b)=>a-b);
+  const n=results.length,mean=results.reduce((a,b)=>a+b,0)/n;
+  const median=results[Math.floor(n*.5)],p10=results[Math.floor(n*.1)],p25=results[Math.floor(n*.25)];
+  const p75=results[Math.floor(n*.75)],p90=results[Math.floor(n*.9)];
+  const std=Math.sqrt(results.reduce((a,b)=>a+(b-mean)**2,0)/n);
+  const prob=results.filter(v=>v>price).length/n*100;
+  window._mc={mean,median,p10,p25,p75,p90,std,prob};
+
+  g('mc-loading').style.display='none';
+  const ms=g('mc-stats');ms.style.display='grid';
+  ms.innerHTML=[
+    ['Valor médio',`$${mean.toFixed(1)}`],['Mediana (P50)',`$${median.toFixed(1)}`],
+    ['P10',`$${p10.toFixed(1)}`],['P90',`$${p90.toFixed(1)}`],
+    ['Desvio-padrão',`$${std.toFixed(1)}`],['P(valor > preço)',`${prob.toFixed(1)}%`,true],
+  ].map(([l,v,hl])=>`<div class="mc-stat"><div class="mc-stat-label">${l}</div><div class="mc-stat-val${hl?' hl':''}">${v}</div></div>`).join('');
+
+  const canvas=g('mc-canvas');canvas.style.display='block';
+  const leg=g('mc-legend');if(leg){leg.style.display='flex';leg.innerHTML=`<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#1a3a5c;margin-right:4px"></span>Distribuição</span><span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#c8401a;margin-right:4px"></span>Preço actual ($${price.toFixed(0)})</span><span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2d6a4f;margin-right:4px"></span>Mediana ($${median.toFixed(0)})</span>`;}
+
+  // Draw histogram
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=canvas.offsetWidth*dpr;canvas.height=200*dpr;
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  const W=canvas.offsetWidth,H=200;
+  const bins=60,minV=p10*.75,maxV=p90*1.3,bw=(maxV-minV)/bins;
+  const counts=Array(bins).fill(0);
+  results.forEach(v=>{const bi=Math.floor((v-minV)/bw);if(bi>=0&&bi<bins)counts[bi]++;});
+  const maxC=Math.max(...counts);
+  const pL=44,pR=16,pT=16,pB=36;
+  const cW=W-pL-pR,cH=H-pT-pB;
+  ctx.clearRect(0,0,W,H);
+  counts.forEach((c,i)=>{
+    const x=pL+i*(cW/bins),bH=c/maxC*cH;
+    const cv=minV+(i+.5)*bw;
+    ctx.fillStyle=cv>price?'rgba(26,58,92,0.65)':'rgba(200,64,26,0.4)';
+    ctx.fillRect(x,pT+cH-bH,Math.max(cW/bins-1,1),bH);
+  });
+  [[price,'#c8401a'],[median,'#2d6a4f']].forEach(([v,col])=>{
+    const x=pL+(v-minV)/(maxV-minV)*cW;
+    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.setLineDash([4,3]);
+    ctx.beginPath();ctx.moveTo(x,pT);ctx.lineTo(x,pT+cH);ctx.stroke();
+  });
+  ctx.setLineDash([]);
+  ctx.fillStyle='#888';ctx.font=`10px DM Mono,monospace`;ctx.textAlign='center';
+  for(let i=0;i<=4;i++){const v=minV+i*(maxV-minV)/4;ctx.fillText('$'+v.toFixed(0),pL+i*cW/4,pT+cH+18);}
+  renderFF();
+  renderComments();
+}
+
+// ══════════════════════════════════════════════════════════════
+// SENSITIVITY
+// ══════════════════════════════════════════════════════════════
+function buildSens(fcf,wacc,g1,g2,phase1,totalYrs,nd,sh,tvM,em,ebitda){
+  const waccs=[wacc-1,wacc-.5,wacc,wacc+.5,wacc+1];
+  const gtvs=[1.5,2.0,2.5,3.0,3.5];
+  const prices=waccs.map(w=>gtvs.map(gv=>{try{const r=calcDCF(fcf,w,g1,g2,gv,phase1,totalYrs,nd,sh,tvM,em,ebitda);return r.price;}catch{return 0;}}));
+  return{waccs,gtvs,prices};
+}
+
+// ══════════════════════════════════════════════════════════════
+// FOOTBALL FIELD
+// ══════════════════════════════════════════════════════════════
+function renderFF(){
+  const price=gv('i-price');
+  const fcf=gv('i-fcf'),wacc=gv('i-wacc'),g1=gv('i-g1'),g2=gv('i-g2'),gtv=gv('i-gtv');
+  const nd=gv('i-netdebt'),sh=gv('i-shares'),ph1=gv('i-phase1'),yrs=gv('i-dcfyrs');
+  const tvM=gs('i-tvmethod'),em=gv('i-exitmult'),ebitda=gv('i-ebitda');
+  const bearW=gv('i-bear-wacc'),bearG=gv('i-bear-g'),bearGtv=gv('i-bear-gtv');
+  const bullW=gv('i-bull-wacc'),bullG=gv('i-bull-g'),bullGtv=gv('i-bull-gtv');
+
+  const bear=calcDCF(fcf,wacc+bearW,g1-bearG,g2-bearG,bearGtv,ph1,yrs,nd,sh,tvM,em,ebitda);
+  const base=calcDCF(fcf,wacc,g1,g2,gtv,ph1,yrs,nd,sh,tvM,em,ebitda);
+  const bull=calcDCF(fcf,wacc-bullW,g1+bullG,g2+bullG,bullGtv,ph1,yrs,nd,sh,tvM,em,ebitda);
+
+  const eps=gv('i-eps'),pe5=gv('i-pe5');
+  const ev5=gv('i-ev5');
+  const cons=gv('i-cons');
+  const mc=window._mc;
+
+  const rows=[
+    {label:'DCF Bear',lo:bear.price*.97,hi:bear.price*1.03,col:'rgba(200,64,26,0.6)'},
+    {label:'DCF Base',lo:base.price*.97,hi:base.price*1.03,col:'rgba(26,58,92,0.7)'},
+    {label:'DCF Bull',lo:bull.price*.97,hi:bull.price*1.03,col:'rgba(45,106,79,0.7)'},
+    {label:'P/E Histórico 5A',lo:eps*pe5*.85,hi:eps*pe5*1.15,col:'rgba(184,134,11,0.6)'},
+    {label:'EV/EBITDA Histórico 5A',lo:(ev5*ebitda-nd)/(sh/1e3)*.85,hi:(ev5*ebitda-nd)/(sh/1e3)*1.15,col:'rgba(100,80,160,0.6)'},
+    ...(mc?[{label:'Monte Carlo P10–P90',lo:mc.p10,hi:mc.p90,col:'rgba(100,120,140,0.4)'}]:[]),
+    {label:`Consenso (${gv('i-nana').toFixed(0)} analistas)`,lo:cons*.9,hi:cons*1.1,col:'rgba(45,106,79,0.35)'},
+  ];
+
+  const allV=[price,...rows.flatMap(r=>[r.lo,r.hi])].filter(v=>v>0&&v<price*10);
+  const minV=Math.min(...allV)*.88,maxV=Math.max(...allV)*1.08,range=maxV-minV;
+  const pricePct=(price-minV)/range*100;
+
+  const wrap=g('ff-wrap');wrap.innerHTML='';
+  rows.forEach(row=>{
+    const lo=Math.max(row.lo,minV),hi=Math.min(row.hi,maxV);
+    const leftP=(lo-minV)/range*100,widthP=(hi-lo)/range*100;
+    const d=document.createElement('div');d.className='ff-row';
+    d.innerHTML=`<div class="ff-lbl">${row.label}</div>
+    <div class="ff-bw">
+      <div class="ff-b" style="left:${leftP}%;width:${widthP}%;background:${row.col}">
+        <span class="ff-bt">$${row.lo.toFixed(0)}–$${row.hi.toFixed(0)}</span>
+      </div>
+      <div class="ff-pl" style="left:${pricePct}%"><div class="ff-ptxt">$${price.toFixed(0)}</div></div>
+    </div>
+    <div class="ff-rng">$${row.lo.toFixed(0)}–$${row.hi.toFixed(0)}</div>`;
+    wrap.appendChild(d);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// COMMENTS
+// ══════════════════════════════════════════════════════════════
+function renderComments(){
+  const pairs=[['c-snap','ct-snap','cd-snap'],['c-mult','ct-mult','cd-mult'],['c-peers','ct-peers','cd-peers'],['c-dcf','ct-dcf','cd-dcf'],['c-proj','ct-proj','cd-proj'],['c-mc','ct-mc','cd-mc']];
+  pairs.forEach(([src,tgt,wrap])=>{
+    const txt=gs(src);
+    const el=g(tgt);const wr=g(wrap);
+    if(el)el.textContent=txt;
+    if(wr)wr.style.display=txt?'block':'none';
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// RENDER ALL
+// ══════════════════════════════════════════════════════════════
+function renderAll(){
+  const ticker=gs('i-ticker').toUpperCase()||'TICKER';
+  const name=gs('i-name')||'Nome da Empresa';
+  const exchange=gs('i-exchange');
+  const date=gs('i-date');
+  const analyst=gs('i-analyst');
+  const price=gv('i-price')||100;
+  const mktcap=gv('i-mktcap');
+  const high=gv('i-high'),low=gv('i-low');
+  const nd=gv('i-netdebt'),sh=gv('i-shares');
+  const divy=gv('i-divy'),divyr=gv('i-divyr');
+  const payout=gv('i-payout'),bby=gv('i-bby'),divcagr=gv('i-divcagr'),sbc=gv('i-sbc');
+  const fcf=gv('i-fcf'),ebitda=gv('i-ebitda'),ni=gv('i-ni'),rev=gv('i-rev');
+  const eps=gv('i-eps'),epsfwd1=gv('i-epsfwd1'),epsfwd2=gv('i-epsfwd2');
+  const opmargin=gv('i-opmargin'),gm=gv('i-gm'),nm=gv('i-nm'),revg=gv('i-revg'),roic=gv('i-roic');
+  const pe5=gv('i-pe5'),ev5=gv('i-ev5'),pfcf5=gv('i-pfcf5'),dy5=gv('i-dy5');
+  const cons=gv('i-cons'),nana=gv('i-nana');
+  const wacc=gv('i-wacc'),g1=gv('i-g1'),g2=gv('i-g2'),gtv=gv('i-gtv');
+  const ph1=Math.min(gv('i-phase1')||5,gv('i-dcfyrs'));
+  const totalYrs=gv('i-dcfyrs')||10;
+  const tvM=gs('i-tvmethod'),em=gv('i-exitmult');
+  const bearW=gv('i-bear-wacc'),bearG=gv('i-bear-g'),bearGtv=gv('i-bear-gtv');
+  const bullW=gv('i-bull-wacc'),bullG=gv('i-bull-g'),bullGtv=gv('i-bull-gtv');
+  const tax=gv('i-tax');
+  g('i-tvmethod').addEventListener&&g('i-tvmethod').addEventListener('change',()=>{g('exit-mult-row').style.display=g('i-tvmethod').value==='exit'?'block':'none';});
+
+  // Derived
+  const ev=mktcap+nd;
+  const pe=price/eps,pfwdE1=price/epsfwd1,pfwdE2=price/epsfwd2;
+  const evEbitda=ev/ebitda;
+  const pfcf=mktcap/fcf;
+  const fcfYield=fcf/mktcap*100;
+  const ey=(1/pe)*100;
+  const shY=divy+bby;
+  const cons_upside=(cons/price-1)*100;
+  const posvs52h=(price/high-1)*100;
+
+  // Header
+  document.title=`${ticker} — Valuation | Análise Fundamental`;
+  g('h-logo').textContent=(analyst.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2))||'AF';
+  g('h-meta').textContent=`Análise Fundamental · ${exchange}: ${ticker} · Valuation`;
+  g('h-date').textContent=date;
+  g('h-name').textContent=name;
+  g('h-hero-meta').textContent=`Preço $${price.toFixed(2)} · Market Cap $${mktcap.toFixed(1)}B · Fwd P/E ${pfwdE1.toFixed(1)}x · ${date}`;
+  g('snap-sub').textContent=`Fotografia da cotação de ${name} (${exchange}: ${ticker}). O título transaciona ${Math.abs(posvs52h).toFixed(0)}% ${posvs52h<0?'abaixo':'acima'} do máximo de 52 semanas.`;
+
+  // 01 SNAP CARDS
+  const cards=[
+    {l:'Preço actual',v:`$${price.toFixed(2)}`,s:`52w: $${low.toFixed(2)} – $${high.toFixed(2)}`},
+    {l:'Market Cap',v:`$${mktcap.toFixed(1)}B`,s:`~${sh.toFixed(0)}M acções`},
+    {l:'Enterprise Value',v:`$${ev.toFixed(1)}B`,s:`Inclui $${nd.toFixed(1)}B net debt`},
+    {l:'FCF Yield',v:`${fcfYield.toFixed(2)}%`,s:`FCF $${fcf.toFixed(1)}B / MktCap`,badge:fcfYield>4?'bp':'bnu',badgeT:fcfYield>4?'Atractivo':'Neutro'},
+    {l:'Dividend Yield',v:`${divy.toFixed(2)}%`,s:divyr>0?`${divyr} anos consecutivos`:'Sem histórico',badge:divy>dy5?'bp':'bnu',badgeT:divy>dy5?'Acima média 5A':'Abaixo média 5A'},
+    {l:'Buyback Yield',v:`${bby.toFixed(2)}%`,s:'Recompra de acções'},
+    {l:'Shareholder Yield',v:`${shY.toFixed(2)}%`,s:'Div. + Buyback',badge:shY>5?'bp':shY<2?'bn':'bnu',badgeT:shY>5?'Elevado':shY<2?'Baixo':'Moderado'},
+    {l:'Earnings Yield',v:`${ey.toFixed(2)}%`,s:'Inverso do P/E TTM'},
+    {l:'ROIC',v:`${roic.toFixed(1)}%`,s:'Retorno sobre capital invest.',badge:roic>15?'bp':roic<8?'bn':'bnu',badgeT:roic>15?'Excelente':roic<8?'Fraco':'Aceitável'},
+    {l:'Consenso analistas',v:`$${cons.toFixed(0)}`,s:`${nana.toFixed(0)} analistas · ${gs('i-consrating')} · ${cons_upside>0?'+':''}${cons_upside.toFixed(0)}%`,badge:cons_upside>15?'bp':cons_upside<0?'bn':'bnu',badgeT:`${cons_upside>0?'+':''}${cons_upside.toFixed(0)}%`},
+    {l:'Rev. Growth TTM',v:`${revg.toFixed(1)}%`,s:'Crescimento YoY'},
+    {l:'Op. Margin',v:`${opmargin.toFixed(1)}%`,s:'Margem operacional TTM'},
+  ];
+  g('snap-cards').innerHTML=cards.map(c=>`<div class="card"><div class="card-label">${c.l}</div><div class="card-value">${c.v}</div><div class="card-sub">${c.s}</div>${c.badge?`<span class="card-badge ${c.badge}">${c.badgeT}</span>`:''}</div>`).join('');
+
+  // 02 MÚLTIPLOS
+  const leitura=(a,h)=>{const d=(a-h)/Math.abs(h);return d<-.05?['Desconto','pos']:d>.05?['Prémio','neg']:['Em linha','neu'];};
+  const multRows=[
+    [`P/E (TTM) — $${price.toFixed(2)} / EPS $${eps.toFixed(2)}`,pe.toFixed(1)+'x',`~${pe5.toFixed(0)}x`,...leitura(pe,pe5)],
+    [`P/E Forward Y+1 — EPS est. $${epsfwd1.toFixed(2)}`,pfwdE1.toFixed(1)+'x',`~${pe5.toFixed(0)}x`,...leitura(pfwdE1,pe5)],
+    [`P/E Forward Y+2 — EPS est. $${epsfwd2.toFixed(2)}`,pfwdE2.toFixed(1)+'x',`~${pe5.toFixed(0)}x`,...leitura(pfwdE2,pe5)],
+    [`EV/EBITDA — EV $${ev.toFixed(1)}B / EBITDA $${ebitda.toFixed(1)}B`,evEbitda.toFixed(1)+'x',`~${ev5.toFixed(0)}x`,...leitura(evEbitda,ev5)],
+    [`P/FCF — MktCap $${mktcap.toFixed(1)}B / FCF $${fcf.toFixed(1)}B`,pfcf.toFixed(1)+'x',`~${pfcf5.toFixed(0)}x`,...leitura(pfcf,pfcf5)],
+    [`Div. Yield`,divy.toFixed(2)+'%',`~${dy5.toFixed(1)}%`,divy>dy5?'Acima média':'Abaixo média',divy>dy5?'pos':'neg'],
+    [`Gross Margin`,gm.toFixed(1)+'%','—','—','neu'],
+    [`Net Margin`,nm.toFixed(1)+'%','—','—','neu'],
+  ];
+  g('mult-tbl').innerHTML=`<thead><tr><th>Métrica</th><th>Actual</th><th>Média 5A</th><th>Leitura</th></tr></thead><tbody>${multRows.map(r=>`<tr><td>${r[0]}</td><td class="mono">${r[1]}</td><td class="mono" style="color:var(--ink4)">${r[2]}</td><td class="${r[4]}">${r[3]}</td></tr>`).join('')}</tbody>`;
+
+  // 03 PEERS
+  g('peers-title').textContent=`${ticker} vs Peers`;
+  g('peers-sub').textContent=`Comparação de ${name} com os principais concorrentes cotados do mesmo sector.`;
+  const mainRow={ticker,name:`${name} — Em análise`,pfwd:pfwdE1.toFixed(1)+'x',evebitda:evEbitda.toFixed(1)+'x',divy:divy.toFixed(2)+'%',opmargin:opmargin.toFixed(1)+'%',netmargin:nm.toFixed(1)+'%',rating:gs('i-consrating'),moat:'—',main:true};
+  g('peers-tbl').innerHTML=`<thead><tr><th>Empresa</th><th>P/E Fwd</th><th>EV/EBITDA</th><th>Div Yield</th><th>Op. Margin</th><th>Net Margin</th><th>MOAT</th><th>Rating</th></tr></thead><tbody>${[mainRow,...peers].map(p=>`<tr class="${p.main?'row-hi':''}"><td><strong class="mono">${p.ticker}</strong> · ${p.name}</td><td class="mono">${p.pfwd}</td><td class="mono">${p.evebitda}</td><td class="mono">${p.divy}</td><td class="mono">${p.opmargin}</td><td class="mono">${p.netmargin}</td><td class="mono">${p.moat}</td><td class="mono">${p.rating}</td></tr>`).join('')}</tbody>`;
+
+  // 04 DCF
+  const bear=calcDCF(fcf,wacc+bearW,g1-bearG,g2-bearG,bearGtv,ph1,totalYrs,nd,sh,tvM,em,ebitda);
+  const baseR=calcDCF(fcf,wacc,g1,g2,gtv,ph1,totalYrs,nd,sh,tvM,em,ebitda);
+  const bull=calcDCF(fcf,wacc-bullW,g1+bullG,g2+bullG,bullGtv,ph1,totalYrs,nd,sh,tvM,em,ebitda);
+
+  const fmtDelta=(p)=>{const d=(p/price-1)*100;return`<span style="color:${d>0?'var(--bull)':'var(--bear)'}">${d>0?'+':''}${d.toFixed(0)}% vs preço</span>`;};
+  g('dcf-config').innerHTML=[
+    ['Base do DCF',gs('i-dcfbase').toUpperCase()],
+    ['Horizonte',`${totalYrs} anos`],
+    ['Fase 1',`${ph1} anos @ ${g1.toFixed(1)}%`],
+    ['Fase 2',`${totalYrs-ph1} anos @ ${g2.toFixed(1)}%`],
+    ['WACC',`${wacc.toFixed(2)}%`],
+    ['Terminal growth',`${gtv.toFixed(2)}%`],
+    ['Método TV',tvM==='gordon'?'Gordon Growth':'Exit Multiple'],
+    ['Taxa imposto',`${tax.toFixed(0)}%`],
+  ].map(([l,v])=>`<div class="dcf-config-item">${l}: <span>${v}</span></div>`).join('');
+
+  g('dcf-scenarios').innerHTML=`
+    <div class="sc bear"><div class="sc-label">▼ BEAR</div><div class="sc-price">$${bear.price.toFixed(0)}</div><div class="sc-delta">${fmtDelta(bear.price)}</div><div class="sc-params">WACC ${(wacc+bearW).toFixed(2)}%<br>Cresc. ${(g1-bearG).toFixed(1)}% → ${(g2-bearG).toFixed(1)}%<br>TV growth ${bearGtv.toFixed(2)}%<br>TV: ${bear.tvPct.toFixed(0)}% do EV</div></div>
+    <div class="sc base"><div class="sc-label">● BASE</div><div class="sc-price">$${baseR.price.toFixed(0)}</div><div class="sc-delta">${fmtDelta(baseR.price)}</div><div class="sc-params">WACC ${wacc.toFixed(2)}%<br>Cresc. ${g1.toFixed(1)}% → ${g2.toFixed(1)}%<br>TV growth ${gtv.toFixed(2)}%<br>TV: ${baseR.tvPct.toFixed(0)}% do EV</div></div>
+    <div class="sc bull"><div class="sc-label">▲ BULL</div><div class="sc-price">$${bull.price.toFixed(0)}</div><div class="sc-delta">${fmtDelta(bull.price)}</div><div class="sc-params">WACC ${(wacc-bullW).toFixed(2)}%<br>Cresc. ${(g1+bullG).toFixed(1)}% → ${(g2+bullG).toFixed(1)}%<br>TV growth ${bullGtv.toFixed(2)}%<br>TV: ${bull.tvPct.toFixed(0)}% do EV</div></div>
+  `;
+
+  // DCF year by year
+  const yrs=baseR.yearRows;
+  const yrHdrs=['Ano','FCF proj. ($M)','Cresc. (%)','PV ($M)','PV acumulado ($M)'];
+  g('dcf-yr-tbl').innerHTML=`<thead><tr>${yrHdrs.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${
+    yrs.map(y=>`<tr${y.year===ph1?` style="border-bottom:2px solid var(--acc2)"`:''}>
+      <td class="mono">${y.year<=ph1?`Fase 1 — Ano ${y.year}`:`Fase 2 — Ano ${y.year}`}</td>
+      <td class="mono">$${(y.cf/1e6).toFixed(0)}M</td>
+      <td class="mono">${y.rate.toFixed(1)}%</td>
+      <td class="mono">$${(y.pv/1e6).toFixed(0)}M</td>
+      <td class="mono">$${(y.cumPV/1e6).toFixed(0)}M</td>
+    </tr>`).join('')}
+    <tr class="row-total"><td colspan="2" class="mono">Valor Terminal</td><td class="mono">${gtv.toFixed(2)}%</td><td class="mono">$${(baseR.pvTV/1e6).toFixed(0)}M</td><td class="mono">${baseR.tvPct.toFixed(0)}% do EV</td></tr>
+    <tr class="row-total" style="background:rgba(26,58,92,.06)"><td colspan="2"><strong>Enterprise Value total</strong></td><td class="mono" colspan="3"><strong>$${(baseR.ev/1e9).toFixed(2)}B → Preço justo $${baseR.price.toFixed(1)}/acção</strong></td></tr>
+  </tbody>`;
+
+  // Sensitivity
+  const sens=buildSens(fcf,wacc,g1,g2,ph1,totalYrs,nd,sh,tvM,em,ebitda);
+  const allP=sens.prices.flat().filter(p=>p>0);
+  const minP=Math.min(...allP),maxP=Math.max(...allP);
+  const hc=v=>{const r=(v-minP)/(maxP-minP);if(r<.2)return'h0';if(r<.4)return'h1';if(r<.6)return'h2';if(r<.8)return'h3';return'h4';};
+  g('sens-tbl').innerHTML=`<tr><td class="cn">WACC↓ / g→</td>${sens.gtvs.map(g=>`<th class="ch">${g.toFixed(1)}%</th>`).join('')}</tr>${
+    sens.waccs.map((w,wi)=>`<tr><td class="rh">${w.toFixed(2)}%</td>${sens.prices[wi].map(p=>`<td class="${hc(p)}">${p>0?'$'+p.toFixed(0):'—'}</td>`).join('')}</tr>`).join('')
+  }`;
+
+  // 05 PROJECTIONS
+  ['base','bull','bear'].forEach(sc=>{
+    const rows=buildProjections(sc);
+    renderProjTable(`proj-${sc}`,rows,sc);
+  });
+
+  // 06 MC
+  g('mc-loading').style.display='block';
+  g('mc-stats').style.display='none';
+  g('mc-canvas').style.display='none';
+  setTimeout(()=>runMC(),50);
+
+  // VERDICT
+  const vText=gs('i-verdict'),vFair=gs('i-vfair'),vMseg=gs('i-mseg'),vRec=gs('i-rec'),vConv=gs('i-conv');
+  const baseDelta=(baseR.price/price-1)*100;
+  g('verdict-box').innerHTML=`
+    <p class="verdict-text">${vText}</p>
+    <div class="verdict-grid">
+      <div><div class="vi-label">Valor justo central</div><div class="vi-val">${vFair}</div></div>
+      <div><div class="vi-label">Preço actual</div><div class="vi-val">$${price.toFixed(2)}</div></div>
+      <div><div class="vi-label">DCF Base</div><div class="vi-val ${baseDelta>0?'vpos':'vneg'}">$${baseR.price.toFixed(0)}</div></div>
+      <div><div class="vi-label">Margem de segurança</div><div class="vi-val">${vMseg}</div></div>
+      <div><div class="vi-label">Recomendação</div><div class="vi-val ${baseDelta>10?'vpos':baseDelta<-10?'vneg':''}">${vRec}</div></div>
+      <div><div class="vi-label">Convicção</div><div class="vi-val">${vConv}</div></div>
+    </div>
+  `;
+
+  // FOOTER
+  const srcs=gs('i-sources').split(',').map(s=>s.trim()).filter(Boolean);
+  g('footer-src').innerHTML=`Fontes: ${srcs.map(s=>`<a href="#" onclick="return false">${s}</a>`).join(' · ')}`;
+
+  renderComments();
+}
+
+// ══════════════════════════════════════════════════════════════
+// PANEL & TABS
+// ══════════════════════════════════════════════════════════════
+function togglePanel(){
+  const p=g('panel'),m=g('main'),b=g('toggle-btn');
+  p.classList.toggle('hidden');
+  m.classList.toggle('full');
+  b.classList.toggle('open');
+}
+function switchTab(id){
+  document.querySelectorAll('.p-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.p-section').forEach(s=>s.classList.remove('active'));
+  event.target.classList.add('active');
+  g('tab-'+id).classList.add('active');
+}
+g('i-tvmethod')?.addEventListener('change',()=>{
+  g('exit-mult-row').style.display=g('i-tvmethod').value==='exit'?'block':'none';
+});
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+renderPeerEditor();
+renderAll();
+</script>
+</body>
+</html>
+HTMLEOF
+echo "OK — $(wc -l < /mnt/user-data/outputs/valuation_pro.html) linhas"
